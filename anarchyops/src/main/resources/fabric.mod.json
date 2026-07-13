@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "anarchyops",
+  "version": "${version}",
+  "name": "AnarchyOps",
+  "description": "Utility, survival and navigation addon for Meteor Client.",
+  "authors": ["agusti3213"],
+  "environment": "client",
+  "entrypoints": { "meteor": ["me.agusti.anarchyops.AnarchyOps"] },
+  "custom": {
+    "meteor-client:color": "70,170,255",
+    "modmenu": { "parent": { "id": "meteor-client" } }
+  },
+  "depends": {
+    "java": ">=21",
+    "minecraft": ["${mc_version}"],
+    "meteor-client": "*"
+  }
+}
