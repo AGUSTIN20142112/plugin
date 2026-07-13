@@ -38,6 +38,16 @@ jobs:
           set -o pipefail
           gradle clean build --stacktrace 2>&1 | tee ../build.log
 
+      - name: Prepare portable Gradle cache
+        if: always()
+        run: |
+          rm -rf ../offline-gradle-home ../offline-gradle-project
+          mkdir -p ../offline-gradle-home
+          cp -a "$HOME/.gradle/caches" ../offline-gradle-home/
+          cp -a "$HOME/.gradle/wrapper" ../offline-gradle-home/ || true
+          cp -a .gradle ../offline-gradle-project || true
+          find ../offline-gradle-home ../offline-gradle-project -name '*.lock' -delete 2>/dev/null || true
+
       - name: Upload output
         if: always()
         uses: actions/upload-artifact@v4
@@ -47,6 +57,17 @@ jobs:
           path: |
             anarchyops/build/libs/**
             build.log
+
+      - name: Upload offline Gradle cache
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: anarchyops-offline-gradle-cache
+          compression-level: 0
+          if-no-files-found: error
+          path: |
+            offline-gradle-home/**
+            offline-gradle-project/**
 
       - name: Fail if build failed
         if: steps.build.outcome == 'failure'
