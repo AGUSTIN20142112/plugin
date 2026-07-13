@@ -46,7 +46,7 @@ public final class SessionTracker {
 
         String dimension = mc.world.getRegistryKey().getValue().toString();
         dimensionsVisited.add(dimension);
-        Vec3d now = mc.player.getPos();
+        Vec3d now = new Vec3d(mc.player.getX(), mc.player.getY(), mc.player.getZ());
 
         if (start == null) {
             start = now;

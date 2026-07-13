@@ -6,8 +6,9 @@ import meteordevelopment.meteorclient.systems.hud.HudElementInfo;
 import meteordevelopment.meteorclient.systems.hud.HudRenderer;
 import meteordevelopment.meteorclient.utils.player.InvUtils;
 import meteordevelopment.meteorclient.utils.render.color.Color;
-import net.minecraft.item.Item;
 import net.minecraft.item.Items;
+
+import static meteordevelopment.meteorclient.MeteorClient.mc;
 
 public final class OpsHud extends HudElement {
     public static final HudElementInfo<OpsHud> INFO = new HudElementInfo<>(AnarchyOps.HUD_GROUP, "ops-session", "Session statistics, health and critical supplies.", OpsHud::new);
@@ -39,7 +40,7 @@ public final class OpsHud extends HudElement {
         }
     }
 
-    private int count(Item item) {
+    private int count(net.minecraft.item.Item item) {
         return mc.player == null ? 0 : InvUtils.find(item).count();
     }
 }
