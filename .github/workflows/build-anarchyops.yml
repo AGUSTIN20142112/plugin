@@ -38,15 +38,19 @@ jobs:
           set -o pipefail
           gradle clean build --stacktrace 2>&1 | tee ../build.log
 
-      - name: Prepare portable Gradle cache
+      - name: Prepare split portable Gradle cache
         if: always()
         run: |
-          rm -rf ../offline-gradle-home ../offline-gradle-project
-          mkdir -p ../offline-gradle-home
+          rm -rf ../offline-gradle-home ../offline-gradle-project ../cache-parts
+          mkdir -p ../offline-gradle-home ../cache-parts
           cp -a "$HOME/.gradle/caches" ../offline-gradle-home/
           cp -a "$HOME/.gradle/wrapper" ../offline-gradle-home/ || true
           cp -a .gradle ../offline-gradle-project || true
           find ../offline-gradle-home ../offline-gradle-project -name '*.lock' -delete 2>/dev/null || true
+          cd ..
+          tar -cf - offline-gradle-home offline-gradle-project | split -b 200M - cache-parts/cache.tar.part-
+          sha256sum cache-parts/cache.tar.part-* > cache-parts/SHA256SUMS
+          ls -lh cache-parts
 
       - name: Upload output
         if: always()
@@ -58,16 +62,53 @@ jobs:
             anarchyops/build/libs/**
             build.log
 
-      - name: Upload offline Gradle cache
+      - name: Upload cache part aa
+        if: ${{ always() && hashFiles('cache-parts/cache.tar.part-aa') != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: anarchyops-cache-aa
+          compression-level: 0
+          path: cache-parts/cache.tar.part-aa
+
+      - name: Upload cache part ab
+        if: ${{ always() && hashFiles('cache-parts/cache.tar.part-ab') != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: anarchyops-cache-ab
+          compression-level: 0
+          path: cache-parts/cache.tar.part-ab
+
+      - name: Upload cache part ac
+        if: ${{ always() && hashFiles('cache-parts/cache.tar.part-ac') != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: anarchyops-cache-ac
+          compression-level: 0
+          path: cache-parts/cache.tar.part-ac
+
+      - name: Upload cache part ad
+        if: ${{ always() && hashFiles('cache-parts/cache.tar.part-ad') != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: anarchyops-cache-ad
+          compression-level: 0
+          path: cache-parts/cache.tar.part-ad
+
+      - name: Upload cache part ae
+        if: ${{ always() && hashFiles('cache-parts/cache.tar.part-ae') != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: anarchyops-cache-ae
+          compression-level: 0
+          path: cache-parts/cache.tar.part-ae
+
+      - name: Upload cache checksums
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: anarchyops-offline-gradle-cache
+          name: anarchyops-cache-checksums
           compression-level: 0
-          if-no-files-found: error
-          path: |
-            offline-gradle-home/**
-            offline-gradle-project/**
+          path: cache-parts/SHA256SUMS
 
       - name: Fail if build failed
         if: steps.build.outcome == 'failure'
