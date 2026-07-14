@@ -1,0 +1,49 @@
+name: Export Gradle 9.2
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [anarchyops-build]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export-gradle:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Gradle 9.2.0
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.0'
+
+      - name: Package Gradle distribution
+        run: |
+          set -euxo pipefail
+          GRADLE_BIN="$(readlink -f "$(command -v gradle)")"
+          GRADLE_HOME="$(cd "$(dirname "$GRADLE_BIN")/.." && pwd)"
+          echo "Gradle home: $GRADLE_HOME"
+          gradle --version
+          tar -C "$(dirname "$GRADLE_HOME")" -czf gradle-9.2.0-linux.tar.gz "$(basename "$GRADLE_HOME")"
+          sha256sum gradle-9.2.0-linux.tar.gz > gradle-9.2.0-linux.tar.gz.sha256
+          ls -lh gradle-9.2.0-linux.tar.gz*
+
+      - name: Upload Gradle distribution
+        uses: actions/upload-artifact@v4
+        with:
+          name: gradle-9.2.0-linux
+          compression-level: 0
+          path: |
+            gradle-9.2.0-linux.tar.gz
+            gradle-9.2.0-linux.tar.gz.sha256
