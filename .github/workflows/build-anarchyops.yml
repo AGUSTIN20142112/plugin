@@ -1,8 +1,6 @@
-name: Build AnarchyOps
+name: Export Gradle 9.2
 
 on:
-  pull_request:
-    branches: [main]
   push:
     branches: [anarchyops-build]
   workflow_dispatch:
@@ -11,11 +9,8 @@ permissions:
   contents: read
 
 jobs:
-  build:
+  export-gradle:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: anarchyops
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -26,90 +21,27 @@ jobs:
           distribution: temurin
           java-version: '21'
 
-      - name: Set up Gradle
+      - name: Set up Gradle 9.2.0
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.2.0'
 
-      - name: Build addon
-        id: build
-        continue-on-error: true
+      - name: Package Gradle distribution
         run: |
-          set -o pipefail
-          gradle clean build --stacktrace 2>&1 | tee ../build.log
+          set -euxo pipefail
+          GRADLE_BIN="$(readlink -f "$(command -v gradle)")"
+          GRADLE_HOME="$(cd "$(dirname "$GRADLE_BIN")/.." && pwd)"
+          echo "Gradle home: $GRADLE_HOME"
+          gradle --version
+          tar -C "$(dirname "$GRADLE_HOME")" -czf gradle-9.2.0-linux.tar.gz "$(basename "$GRADLE_HOME")"
+          sha256sum gradle-9.2.0-linux.tar.gz > gradle-9.2.0-linux.tar.gz.sha256
+          ls -lh gradle-9.2.0-linux.tar.gz*
 
-      - name: Prepare split portable Gradle cache
-        if: always()
-        run: |
-          rm -rf ../offline-gradle-home ../offline-gradle-project ../cache-parts
-          mkdir -p ../offline-gradle-home ../cache-parts
-          cp -a "$HOME/.gradle/caches" ../offline-gradle-home/
-          cp -a "$HOME/.gradle/wrapper" ../offline-gradle-home/ || true
-          cp -a .gradle ../offline-gradle-project || true
-          find ../offline-gradle-home ../offline-gradle-project -name '*.lock' -delete 2>/dev/null || true
-          cd ..
-          tar -cf - offline-gradle-home offline-gradle-project | split -b 200M - cache-parts/cache.tar.part-
-          sha256sum cache-parts/cache.tar.part-* > cache-parts/SHA256SUMS
-          ls -lh cache-parts
-
-      - name: Upload output
-        if: always()
+      - name: Upload Gradle distribution
         uses: actions/upload-artifact@v4
         with:
-          name: anarchyops-build
-          if-no-files-found: warn
+          name: gradle-9.2.0-linux
+          compression-level: 0
           path: |
-            anarchyops/build/libs/**
-            build.log
-
-      - name: Upload cache part aa
-        if: ${{ always() && hashFiles('cache-parts/cache.tar.part-aa') != '' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: anarchyops-cache-aa
-          compression-level: 0
-          path: cache-parts/cache.tar.part-aa
-
-      - name: Upload cache part ab
-        if: ${{ always() && hashFiles('cache-parts/cache.tar.part-ab') != '' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: anarchyops-cache-ab
-          compression-level: 0
-          path: cache-parts/cache.tar.part-ab
-
-      - name: Upload cache part ac
-        if: ${{ always() && hashFiles('cache-parts/cache.tar.part-ac') != '' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: anarchyops-cache-ac
-          compression-level: 0
-          path: cache-parts/cache.tar.part-ac
-
-      - name: Upload cache part ad
-        if: ${{ always() && hashFiles('cache-parts/cache.tar.part-ad') != '' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: anarchyops-cache-ad
-          compression-level: 0
-          path: cache-parts/cache.tar.part-ad
-
-      - name: Upload cache part ae
-        if: ${{ always() && hashFiles('cache-parts/cache.tar.part-ae') != '' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: anarchyops-cache-ae
-          compression-level: 0
-          path: cache-parts/cache.tar.part-ae
-
-      - name: Upload cache checksums
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: anarchyops-cache-checksums
-          compression-level: 0
-          path: cache-parts/SHA256SUMS
-
-      - name: Fail if build failed
-        if: steps.build.outcome == 'failure'
-        run: exit 1
+            gradle-9.2.0-linux.tar.gz
+            gradle-9.2.0-linux.tar.gz.sha256
