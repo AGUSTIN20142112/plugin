@@ -1,6 +1,8 @@
 name: Export Gradle 9.2
 
 on:
+  pull_request:
+    branches: [main]
   push:
     branches: [anarchyops-build]
   workflow_dispatch:
